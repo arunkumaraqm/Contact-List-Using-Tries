@@ -9,7 +9,7 @@
 #include <ctype.h>
 
 // Alphabet size (Number of symbols)
-#define ALPHABET_SIZE (26)
+#define SYMBOL_SIZE (27)
 #define MAX_NAME_LEN (20)
 #define MAX_PHONE_LEN (10)
 
@@ -31,10 +31,14 @@ char *strlwr(char *str) // Remove this if you get a compilation error
   return str;
 }
 
+struct Node;
+struct Trie;
+struct LinkedList;
+
 // trie node
 typedef struct Node
 {
-    struct Node *children[ALPHABET_SIZE];
+    LinkedList child;
 	char* phone;
 	
 } Node;
@@ -46,6 +50,18 @@ typedef struct Trie{
 	NodePointer root;
 } Trie;
 
+typedef struct LinkedListNode{
+
+	char data;
+	NodePointer downward_node;
+	LinkedListNode* next;
+} LinkedListNode;
+
+typedef struct LinkedList{
+
+	LinkedListNode* head;
+} LinkedList;
+
 // Returns new trie node (initialized to NULLs)
 NodePointer create_node(void)
 {
@@ -55,7 +71,7 @@ NodePointer create_node(void)
     {
         new_node->phone = NULL;
        
-        for (int i = 0; i < ALPHABET_SIZE; i++)
+        for (int i = 0; i < SYMBOL_SIZE; i++)
             new_node->children[i] = NULL;
     }
     else
@@ -72,9 +88,6 @@ void n_add_contact(NodePointer root, const char *key, char* phone)
 
     for (int i = 0; key[i]; ++i)
     {
-        // To get the position of the character eg- a=0 , b=1
-        int index = CHAR_TO_INDEX(key[i]);
-
         // Checks whether node is already present, if not then create one
         if (temp->children[index]==NULL)
             temp->children[index] = create_node();
@@ -144,7 +157,7 @@ void n_display_all_contacts(NodePointer root, char *buffer, int buffIndex)
 
     int i;
     
-    for(i = 0; i < ALPHABET_SIZE; i++)
+    for(i = 0; i < SYMBOL_SIZE; i++)
     {
         if(root->children[i] != NULL)
         {
