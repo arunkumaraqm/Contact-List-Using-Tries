@@ -8,16 +8,13 @@
 #include <stdbool.h>
 #include <ctype.h>
 
+// Loopholes: You can add multiple contacts with the same phone number.
+
 // Alphabet size (Number of symbols)
-#define SYMBOL_SIZE (27)
 #define MAX_NAME_LEN (20)
 #define MAX_PHONE_LEN (10)
 
 #define tester(num) printf("%d\n", num);
-
-// Converts key current character into index
-// use only 'a' through 'z' and lower case
-#define CHAR_TO_INDEX(c) ((int)c - (int)'a')
 
 char *strlwr(char *str) // Remove this if you get a compilation error
 {
@@ -33,75 +30,96 @@ char *strlwr(char *str) // Remove this if you get a compilation error
 
 struct Node;
 struct Trie;
-struct LinkedList;
+typedef struct Node* NodePointer;
 
-// trie node
 typedef struct Node
 {
-    LinkedList child;
+	char symbol;
+	NodePointer sibling;
+   	NodePointer child;
 	char* phone;
 	
 } Node;
-
-typedef struct Node* NodePointer;
 
 typedef struct Trie{
 
 	NodePointer root;
 } Trie;
 
-typedef struct LinkedListNode{
-
-	char data;
-	NodePointer downward_node;
-	LinkedListNode* next;
-} LinkedListNode;
-
-typedef struct LinkedList{
-
-	LinkedListNode* head;
-} LinkedList;
-
 // Returns new trie node (initialized to NULLs)
-NodePointer create_node(void)
+NodePointer create_node(char data)
 {
-    NodePointer new_node = (NodePointer)malloc(sizeof(struct Node));
+    NodePointer new_node = (NodePointer)malloc(sizeof *new_node);
 
     if (new_node != NULL)
     {
-        new_node->phone = NULL;
-       
-        for (int i = 0; i < SYMBOL_SIZE; i++)
-            new_node->children[i] = NULL;
+    	new_node->sibling = new_node->child = NULL;
+    	new_node->symbol = data;
     }
-    else
-    {
-            printf("Heap Full.\n");
+    else{
+            printf("Heap Full.\n"); //TODO Check whether return value is null everytime create node is called
     }
     return new_node;
 }
 
+// Returns the address of the node which stores 'data' symbol.
+// All symbols in the linked list are distinct by design.
+NodePointer ll_insert_distinct(NodePointer parent, char data){
+
+	// If a parent has no child, let us create the first child
+	if (parent->child == NULL){
+
+		parent->child = create_node(data);
+		return parent->child;
+	}
+
+	// Let's traverse the linked list until we find the same symbol as 'data' 
+	// If we don't find it, let us add it to the end of the linked list.
+	
+	NodePointer current = parent->child;
+	
+	while (current != NULL){
+
+		if (current->symbol == data) return current;
+		current = current->sibling;
+	}
+	// No matches found. Let's add the 'data' symbol to the front of the ll.
+	current = create_node(data);
+	current->sibling = parent->child;
+	parent->child = current;
+	return current;
+
+	//TODO: Sort while adding
+}
+
 // Inserts a given word to dictionary.
-void n_add_contact(NodePointer root, const char *key, char* phone)
-{
-    NodePointer temp = root;
+void n_add_contact(NodePointer parent, char* new_name, char* new_phone){
 
-    for (int i = 0; key[i]; ++i)
-    {
-        // Checks whether node is already present, if not then create one
-        if (temp->children[index]==NULL)
-            temp->children[index] = create_node();
+	NodePointer new_node = NULL;
+	
+	// Iterating over new_name.
+	// Adding every symbol such that one of their children is the next symbol.
+	for (int i = 0; new_name[i] != '\0'; ++i){
+	
+		new_node = ll_insert_distinct(parent, new_name[i]);
+		parent = new_node; 
+	}
+	// If phone number is already filled in.
+	if (new_node->phone != NULL){
 
-        // To traverse to next node.
-        temp = temp->children[index];
-    }
-
-    temp->phone = phone;
+		int yn;
+		printf("Contact already exists.\nDo you want to update the phone no.? (Yes - 1): ");
+		scanf("%d", &yn);
+		if (yn != 1) return;
+	}
+	
+	// Filling in phone number at for the last symbol.
+	new_node->phone = new_phone;	
 }
 
 // Returns true if key presents in the dictionary, else returns false
 bool n_search_contact( NodePointer root, const char *key)
-{
+{/*
     NodePointer temp = root;
 
     int i;
@@ -115,12 +133,12 @@ bool n_search_contact( NodePointer root, const char *key)
         temp = temp->children[index];
     }
 
-    return (temp != NULL && temp->phone);
+    return (temp != NULL && temp->phone);*/
 }
 
 // Used for prefix search to get the root.
 NodePointer n_traverse_till(NodePointer root, const char *key)
-{
+{/*
     NodePointer temp = root;
 
     int i;
@@ -134,7 +152,7 @@ NodePointer n_traverse_till(NodePointer root, const char *key)
         }
         temp = temp->children[index];
     }
-    return temp;
+    return temp;*/
 }
 
 // To check the words are having only alphabets and converts to lower case.
@@ -150,6 +168,25 @@ char* is_valid(char* input){
     return strlwr(input);
 }
 
+void n_display_all_contacts(NodePointer parent, char* buffer, int level){
+
+	if (parent->phone != NULL){
+
+		buffer[level] = '\0';
+		printf("%s %s\n", buffer, parent->phone);
+
+		if (parent->child == NULL) return;
+	}
+
+	NodePointer current = parent->child;
+	do{
+
+		buffer[level] = current->symbol;
+		n_display_all_contacts(current, buffer, level + 1);
+		current = current->sibling;
+	} while (current);
+}
+/*
 // To display all words present in the dictionary.
 void n_display_all_contacts(NodePointer root, char *buffer, int buffIndex)
 {
@@ -176,10 +213,10 @@ void n_display_all_contacts(NodePointer root, char *buffer, int buffIndex)
         }
     }
 }
-
+*/
 void t_constructor(Trie* trie){
 
-	trie->root = create_node();	
+	trie->root = create_node(0);	
 }
 
 void t_add_contact(Trie* trie){
@@ -226,12 +263,12 @@ void t_search_contact(Trie* trie){
 	
 	if (is_valid(item)){
 
-		if (n_search_contact(trie->root,item))
-			printf("\n%s is present in the dictionary.\n", item);
+		if (n_search_contact(trie->root, item))
+			printf("\n%s is present in the contacts list.\n", item);
 		
 		else{
 
-			printf("\n%s is not present in the dictionary.\n", item);
+			printf("\n%s is not present in the contacts list.\n", item);
 
 			printf("\nShall I add it ? (Yes - 1 or No - 0):");
 			scanf("%d", &yn);
@@ -292,4 +329,68 @@ int main()
 1 Bojack 906
 1 Carmela 907
 1 Chad 90898
+*/
+
+/* UI expectation
+Menu...
+
+<types in something which takes him to "Find Contact">
+
+Suggestion:
+Input: 
+
+<types in A>
+
+Suggestion:
+Input: A
+
+<types in r>
+
+Suggestion: Arun Kumar
+Input: Ar
+
+<types in v>
+
+Suggestion: Arvind
+Input: Arv
+
+<types in t>
+
+None found
+Input: Arvt
+
+<presses backspace>
+
+Suggestion: Arvind
+Input: Arv
+
+<presses backspace>
+
+Suggestion: Arun Kumar
+Input: Ar
+
+<types in u>
+
+Suggestion: Arun Kumar
+Input: Aru
+
+<presses Enter>
+
+Contact: Arun Kumar 9876543210
+1. Call 2. Delete 3. Back
+
+<types in 3>
+
+Suggestion: 
+Input: 
+
+<types in G>
+
+Suggestion:
+Input: G
+
+<presses Esc - wants to go back>
+
+Menu...
+
 */
