@@ -1,6 +1,6 @@
 // Contacts List (Names and Phone Numbers) using Tries
 // Contributors:
-// Arun, Anirudh BM, Anirudh Shastri, Ayaan, Amogh
+// Arun Kumar, Anirudh BM, Anirudh Shastri, Ayaan J Ahmed, Amogh Padukone, Ashish Agnihotri
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,11 +10,10 @@
 
 // Loopholes: You can add multiple contacts with the same phone number.
 
-// Alphabet size (Number of symbols)
 #define MAX_NAME_LEN (20)
 #define MAX_PHONE_LEN (10)
 
-#define tester(num) printf("%d\n", num);
+#define tester(num) printf("%d\n", num); //*
 
 char *strlwr(char *str) // Remove this if you get a compilation error
 {
@@ -36,7 +35,7 @@ typedef struct Node
 {
 	char symbol;
 	NodePointer sibling;
-   	NodePointer child;
+    NodePointer child;
 	char* phone;
 	
 } Node;
@@ -64,7 +63,7 @@ NodePointer create_node(char data)
 
 // Returns the address of the node which stores 'data' symbol.
 // All symbols in the linked list are distinct by design.
-NodePointer ll_insert_distinct(NodePointer parent, char data){
+NodePointer ll_insert_distinct_and_sorted(NodePointer parent, char data){
 
 	// If a parent has no child, let us create the first child
 	if (parent->child == NULL){
@@ -76,20 +75,50 @@ NodePointer ll_insert_distinct(NodePointer parent, char data){
 	// Let's traverse the linked list until we find the same symbol as 'data' 
 	// If we don't find it, let us add it to the end of the linked list.
 	
-	NodePointer current = parent->child;
-	
-	while (current != NULL){
+	NodePointer current = parent->child, past = NULL; 
+	// If past points to one node in the ll, current points to the very next node in the ll. 
 
+	// Upcoming while block won't work for the first node of the ll so this.
+	{
 		if (current->symbol == data) return current;
+		else if (current->symbol > data){
+
+			parent->child = create_node(data);
+			parent->child->sibling = current;
+			return parent->child;
+		} 
+		past = current;
 		current = current->sibling;
 	}
-	// No matches found. Let's add the 'data' symbol to the front of the ll.
-	current = create_node(data);
-	current->sibling = parent->child;
-	parent->child = current;
-	return current;
 
-	//TODO: Sort while adding
+	while (current != NULL){
+
+		if (data == current->symbol){
+
+			return current;
+		}
+		
+		else if (data < current->symbol){
+		
+			// The ll is presorted in asc order.
+			// So, data should be added before the symbol that is more than it.
+
+			past->sibling = create_node(data);
+			past->sibling->sibling = current;
+			return past->sibling;
+		}
+
+		// Loop updation 
+		past = current;
+		current = current->sibling;
+	}
+
+	// We've traversed through the ll now. The data belongs at the end of the ll.
+	{
+			past->sibling = create_node(data);
+			past->sibling->sibling = current; //Remember current is Null here.
+			return past->sibling;
+	} 
 }
 
 // Inserts a given word to dictionary.
@@ -101,7 +130,7 @@ void n_add_contact(NodePointer parent, char* new_name, char* new_phone){
 	// Adding every symbol such that one of their children is the next symbol.
 	for (int i = 0; new_name[i] != '\0'; ++i){
 	
-		new_node = ll_insert_distinct(parent, new_name[i]);
+		new_node = ll_insert_distinct_and_sorted(parent, new_name[i]);
 		parent = new_node; 
 	}
 	// If phone number is already filled in.
@@ -222,7 +251,7 @@ void t_constructor(Trie* trie){
 void t_add_contact(Trie* trie){
 
 	char new_contact_name[MAX_NAME_LEN];
-	scanf("%s", new_contact_name);
+	scanf("%s", new_contact_name); // TODO FIX Stops at a space
 	
     if (is_valid(new_contact_name)){
     
