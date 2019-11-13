@@ -1,39 +1,34 @@
-// Contacts List (Names and Phone Numbers) using Tries
-// Contributors:
-// Arun Kumar, Anirudh BM, Anirudh Shastri, Ayaan J Ahmed, Amogh Padukone, Ashish Agnihotri
+/*
+Contacts List (Names and Phone Numbers) using Tries
+
+Semester 3 Mini Project for Data Structures & Applications
+Contributors:
+Arun Kumar, Anirudh BM, Anirudh Shastri, Ayaan J Ahmed, Amogh Padukone, Ashish Agnihotri
+*/
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h> // For malloc
 #include <string.h>
-#include <stdbool.h>
+#include <stdbool.h> // For bool data type
 #include <ctype.h>
+#include "tries.h" // Stores struct definitions
 
 // Loopholes: You can add multiple contacts with the same phone number.
 
-#define MAX_NAME_LEN (20)
-#define MAX_PHONE_LEN (10)
+/* Naming Convention:
+ll_ functions - linked list operation
+t_ functions can only change trie->root
+n_ functions - pretty much everything else to do with the trie's nodes
+*/
 
-#define tester(num) printf("%d\n", num); //*
+// Utility macro
+#define free_and_null(ptr) {\
+\
+	free(ptr);\
+	ptr = NULL;\
+}
 
-struct Node;
-struct Trie;
-typedef struct Node* NodePointer;
-
-typedef struct Node
-{
-	char symbol;
-	NodePointer sibling;
-    NodePointer child;
-	char* phone;
-	
-} Node;
-
-typedef struct Trie{
-
-	NodePointer root;
-} Trie;
-
-// Returns new trie node (initialized to NULLs)
+// Returns new trie node 
 NodePointer create_node(char data)
 {
     NodePointer new_node = (NodePointer)malloc(sizeof *new_node);
@@ -109,7 +104,7 @@ NodePointer ll_insert_distinct_and_sorted(NodePointer parent, char data){
 	} 
 }
 
-// Inserts a given word to dictionary.
+// Inserts a given contact. 
 void n_add_contact(NodePointer parent, char* new_name, char* new_phone){
 
 	NodePointer new_node = NULL;
@@ -121,6 +116,7 @@ void n_add_contact(NodePointer parent, char* new_name, char* new_phone){
 		new_node = ll_insert_distinct_and_sorted(parent, new_name[i]);
 		parent = new_node; 
 	}
+	
 	// If phone number is already filled in.
 	if (new_node->phone != NULL){
 
@@ -134,7 +130,7 @@ void n_add_contact(NodePointer parent, char* new_name, char* new_phone){
 	new_node->phone = new_phone;	
 }
 
-// To check the words are having only alphabets and converts to lower case.
+// Checks if words are having only alphabets and converts to lower case.
 char* is_valid(char* input){
 
     for(int i = 0; input[i] ; ++i){
@@ -147,8 +143,13 @@ char* is_valid(char* input){
     return input;
 }
 
+// Displays all contacts in ascending order
 void n_display_all_contacts(NodePointer parent, char* buffer, int level){
+// buffer stores all the characters before the current character
+// level signifies the current index of the buffer
 
+	// If phone number exists, the node is a contact. So, print it.
+	// But if its child is NULL, that means the node is also a leaf. No more recursive calls.
 	if (parent->phone != NULL){
 
 		buffer[level] = '\0';
@@ -157,6 +158,7 @@ void n_display_all_contacts(NodePointer parent, char* buffer, int level){
 		if (parent->child == NULL) return;
 	}
 
+	// Calling display on all of the nodes in the linked list.
 	NodePointer current = parent->child;
 	do{
 
@@ -174,12 +176,13 @@ NodePointer ll_find(NodePointer parent, char data){
 	NodePointer current = parent->child;
 
 	do{
-		if (current->symbol == data) return current;
+		if (current->symbol == data) return current; // Match found.
 
 		current = current->sibling;
 
 	}while (current);
-	
+
+	// No match found
 	return NULL;	
 }
 
@@ -190,10 +193,13 @@ void n_search_contact_by_prefix(NodePointer root){
 	char yn;
 
 	NodePointer node = root; int i;
-	
-	for (i = 0; ; ++i){ // TODO i shouldnt exceed MAX_NAME_LEN 
 
-	// TODO Letter casing issue 
+	//TODO Fancier i/o @AnirudhBM
+	
+	for (i = 0; ; ++i){ // TODO i shouldnt exceed MAX_NAME_LEN @ArunKumar 
+
+	// TODO Letter casing issue @ArunKumar
+	
 		printf("Enter character: ");//*
 		scanf(" %c", &search_string[i]); // Again doesn't read spaces
 
@@ -247,21 +253,41 @@ void n_search_contact_by_prefix(NodePointer root){
 	}
 }
 
+// Frees memory occupied by nodes
+void n_destroy_children(NodePointer parent){
+
+	if (parent->child == NULL) return;
+
+	// Destroys linked list from left to right
+	NodePointer past = NULL;
+	NodePointer current = parent->child;
+	do{
+
+		n_destroy_children(current); // Destroys all of the bottom
+		past = current;
+		current = current->sibling;
+		free_and_null(past);
+		
+	} while (current != NULL);
+}
+
+// Creates the root node.
 void t_constructor(Trie* trie){
 
 	trie->root = create_node(0);	
 }
 
+// Reads a contact and adds it to the trie
 void t_add_contact(Trie* trie){
 
 	char new_contact_name[MAX_NAME_LEN];
-	scanf("%s", new_contact_name); // TODO FIX Stops at a space
+	scanf("%s", new_contact_name); // TODO FIX Stops at a space @AnirudhBM
 	
     if (is_valid(new_contact_name)){
     
     	char* new_phone = (char*) calloc(MAX_PHONE_LEN, sizeof *new_phone);
     	scanf("%s", new_phone);
-    	//TODO: check validity of phone no
+    	//TODO: check validity of phone no @AshishAgnihotri
     	n_add_contact(trie->root, new_contact_name, new_phone);
     }
     	
@@ -280,11 +306,18 @@ void t_display_all_contacts(Trie* trie){
 	n_display_all_contacts(trie->root, buffer, 0);
 }
 
+// Called at the end of main
+void t_destructor(Trie* trie){
+
+	n_destroy_children(trie->root);
+	free_and_null(trie->root);
+}
+
 int main()
 {
 	Trie trie;
 	t_constructor(&trie);
-	
+//TODO t_read_to_file(&trie); @AnirudhShastri
 	int option;
 
     do
@@ -304,10 +337,14 @@ int main()
         }
         
     }while(option);
-    
+
+//TODO t_write_to_file(&trie); @AnirudhShastri
+    t_destructor(&trie);
     return 0;
 }
-/*
+
+/* Some inputs for test purposes
+
 1 Adam 901
 1 Angelo 902
 1 Ada 903
