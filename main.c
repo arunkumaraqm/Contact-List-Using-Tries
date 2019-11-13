@@ -193,10 +193,13 @@ void n_search_contact_by_prefix(NodePointer root){
 	
 	for (i = 0; ; ++i){ // TODO i shouldnt exceed MAX_NAME_LEN 
 
+	// TODO Letter casing issue 
+		printf("Enter character: ");//*
 		scanf(" %c", &search_string[i]); // Again doesn't read spaces
 
 		node = ll_find(node, search_string[i]);
 
+		
 		if (node == NULL){
 
 			printf("None found.\n");
@@ -205,24 +208,39 @@ void n_search_contact_by_prefix(NodePointer root){
 		
 		else{
 
-			char suggestion[MAX_NAME_LEN];
-			strcpy(search_string, suggestion);
-			NodePointer current = node; int j = i;
-			while (current->child){
-
-				suggestion[++j] = current->child->symbol;
-				current = current->child;
-			}
-			printf("Suggestion: %s", suggestion);
+			char suggestion[MAX_NAME_LEN] = "";
+			char* phone = NULL;
 			
+			if (node->phone == NULL){
+
+				NodePointer current = node->child; int j = 0;
+
+				// By design, current wouldn't be NULL if node->phone is NULL. 
+				// If that design ever changes, the next line will give a bug.
+				
+				suggestion[j++] = current->symbol;
+				while (current->phone == NULL){
+
+					current = current->child;
+					suggestion[j++] = current->symbol;
+				}
+				suggestion[j] = '\0';
+				phone = current->phone;
+			}
+			else phone = node->phone;
+			
+			printf("Suggestion: %s%s\n", search_string, suggestion);
+
+			printf("Accept suggestion? (y/n): ");//*
 			scanf(" %c", &yn);
 			if (yn == 'y' || yn == 'Y'){
 
-				// TODO Display record
-				printf("Record = %s\n", suggestion);
+				printf("Record = %s%s %s\n", search_string, suggestion, phone);//*
 				return;
 			}
 		}
+
+		printf("Continue entering characters? (y/n): ");//*
 		scanf(" %c", &yn);
 		if (yn != 'y' && yn != 'Y')
 			break;
@@ -298,7 +316,23 @@ int main()
 1 Bojack 906
 1 Carmela 907
 1 Chad 90898
+
+1 m 909
+1 mi 910
+1 mif 908
+1 mil 909
+1 mig 910
+1 mifg 984
+1 milhdhi 984
+1 milhd 558789
+
 */
+
+
+
+
+
+
 
 /* UI expectation
 Menu...
