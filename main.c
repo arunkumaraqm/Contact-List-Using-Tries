@@ -13,13 +13,17 @@ Arun Kumar, Anirudh BM, Anirudh Shastri, Ayaan J Ahmed, Amogh Padukone, Ashish A
 #include <ctype.h>
 #include "tries.h" // Stores struct definitions
 
-// Loopholes: You can add multiple contacts with the same phone number.
+// Issues: 
+// You can add multiple contacts with the same phone number.
+// Casing of letters is not preserved.
 
 /* Naming Convention:
 ll_ functions - linked list operation
 t_ functions can only change trie->root
 n_ functions - pretty much everything else to do with the trie's nodes
 */
+
+#define prompt(x) printf(x) /* Replace ; by printf(x) or vice versa for presentation / convenience*/
 
 // Utility macro
 #define free_and_null(ptr) {\
@@ -130,17 +134,17 @@ void n_add_contact(NodePointer parent, char* new_name, char* new_phone){
 	new_node->phone = new_phone;	
 }
 
-// Checks if words are having only alphabets and converts to lower case.
-char* is_valid(char* input){
 
-    for(int i = 0; input[i] ; ++i){
+bool is_name_valid(char* input){
+
+	int i;
+    for(i = 0; input[i] ; ++i){
     
-        if(isalpha(input[i]) == false)
-            return NULL;
-
         input[i] = tolower(input[i]);
+        if (input[i] == '/' || input[i] == '*') return false;
     }
-    return input;
+	return true;
+    //if (input[i - 1] == '\n') input[i - 1] = '\0';
 }
 
 // Displays all contacts in ascending order
@@ -191,65 +195,118 @@ void n_search_contact_by_prefix(NodePointer root){
 
 	char search_string[MAX_NAME_LEN] = "";
 	char yn;
+	char suggestion[MAX_NAME_LEN] = "";
+	char* phone = NULL;
+		
+	NodePointer node = root; int i = 0;
 
-	NodePointer node = root; int i;
+// i = 0 case. Don't read this block before reading the loop block below.
+{ 
 
-	//TODO Fancier i/o @AnirudhBM
+	printf("Enter string, character by character: ");
 	
-	for (i = 0; ; ++i){ // TODO i shouldnt exceed MAX_NAME_LEN @ArunKumar 
+	fgetc(stdin); //removes unwanted linefeed
+	search_string[i] = getchar(); 
 
-	// TODO Letter casing issue @ArunKumar
+	if (search_string[i] == '/' || search_string[i] == '*') return; // Name cannot contain these characters
 	
-		printf("Enter character: ");//*
-		scanf(" %c", &search_string[i]); // Again doesn't read spaces
+	node = ll_find(node, search_string[i]);
+	
+	if (node == NULL){
 
+		printf("None found.\n");
+		return;
+	}
+	
+	else{
+
+		strcpy(suggestion, "");
+		phone = NULL;
+
+		if (node->phone == NULL){
+
+			NodePointer current = node->child; int j = 0;
+
+			// By design, current wouldn't be NULL if node->phone is NULL. 
+			// If that design ever changes, the next line will give a bug.
+			
+			suggestion[j++] = current->symbol;
+			while (current->phone == NULL){
+
+				current = current->child;
+				suggestion[j++] = current->symbol;
+			}
+			suggestion[j] = '\0';
+			phone = current->phone;
+		}
+		else phone = node->phone;
+	
+		printf("Suggestion: %s%s\n", search_string, suggestion);
+	}
+}
+	// Reads characters from stdin.
+	// User would press '/' if they are going with the given suggestion.
+	// User would press '*' if they want to go back to the main menu.
+	
+	for (i = 1; i < MAX_NAME_LEN; ++i){ 
+
+		printf("Enter string, character by character: ");
+		printf("%s", search_string);
+		
+		fgetc(stdin); //removes unwaned linefeed
+		search_string[i] = getchar(); 
+
+		if (search_string[i] == '/') // Accepted suggestion
+		{
+			search_string[i] = '\0';
+			printf("Record = %s%s %s\n", search_string, suggestion, phone);
+			return;
+		}
+		else if (search_string[i] == '*') // Going back to main menu
+		{
+			return;
+		}
+
+		// Finding the node in the linked list with the entered character
 		node = ll_find(node, search_string[i]);
-
 		
 		if (node == NULL){
 
 			printf("None found.\n");
-			break;
+			return;
 		}
 		
 		else{
 
-			char suggestion[MAX_NAME_LEN] = "";
-			char* phone = NULL;
-			
+			strcpy(suggestion, "");
+			phone = NULL;
+	
 			if (node->phone == NULL){
 
 				NodePointer current = node->child; int j = 0;
 
-				// By design, current wouldn't be NULL if node->phone is NULL. 
+				// CAUTION: By design, current wouldn't be NULL if node->phone is NULL. 
 				// If that design ever changes, the next line will give a bug.
 				
 				suggestion[j++] = current->symbol;
+
+				// Getting the entire name by going down the trie
 				while (current->phone == NULL){
 
 					current = current->child;
 					suggestion[j++] = current->symbol;
 				}
 				suggestion[j] = '\0';
+
+				// Getting the phone number from that last letter (leaf node)
 				phone = current->phone;
 			}
+
+			// Only reaches else block if search string is the entire name of the contact
 			else phone = node->phone;
-			
+		
 			printf("Suggestion: %s%s\n", search_string, suggestion);
-
-			printf("Accept suggestion? (y/n): ");//*
-			scanf(" %c", &yn);
-			if (yn == 'y' || yn == 'Y'){
-
-				printf("Record = %s%s %s\n", search_string, suggestion, phone);//*
-				return;
-			}
 		}
-
-		printf("Continue entering characters? (y/n): ");//*
-		scanf(" %c", &yn);
-		if (yn != 'y' && yn != 'Y')
-			break;
 	}
 }
 
@@ -271,6 +328,9 @@ void n_destroy_children(NodePointer parent){
 	} while (current != NULL);
 }
 
+//-------------
+// T_ FUNCTIONS
+
 // Creates the root node.
 void t_constructor(Trie* trie){
 
@@ -281,18 +341,23 @@ void t_constructor(Trie* trie){
 void t_add_contact(Trie* trie){
 
 	char new_contact_name[MAX_NAME_LEN];
-	scanf("%s", new_contact_name); // TODO FIX Stops at a space @AnirudhBM
+
+	prompt("Enter name: ");
+	/*fgets(new_contact_name, MAX_NAME_LEN, stdin);*/
+	scanf("%s", new_contact_name); // TODO names should contain spaces?
 	
-    if (is_valid(new_contact_name)){
-    
-    	char* new_phone = (char*) calloc(MAX_PHONE_LEN, sizeof *new_phone);
-    	scanf("%s", new_phone);
-    	//TODO: check validity of phone no @AshishAgnihotri
-    	n_add_contact(trie->root, new_contact_name, new_phone);
-    }
-    	
-    else
-    	printf("Name does not meet validity criteria.\n");
+	if (is_name_valid(new_contact_name) == false)
+	{
+		printf("Contact name does not meet validity criteria.\n");
+		return;
+	}
+
+	char* new_phone = (char*) calloc(MAX_PHONE_LEN, sizeof *new_phone);
+	prompt("Enter phone: ");
+	scanf("%s", new_phone);
+	//TODO check validity of phone no 
+
+	n_add_contact(trie->root, new_contact_name, new_phone);
 }
 
 void t_search_contact_by_prefix(Trie* trie){
@@ -313,15 +378,18 @@ void t_destructor(Trie* trie){
 	free_and_null(trie->root);
 }
 
+//-----------------
+// MAIN
 int main()
-{
+{	
 	Trie trie;
 	t_constructor(&trie);
-//TODO t_read_to_file(&trie); @AnirudhShastri
 	int option;
 
     do
     {
+    	prompt("1. Add Contact, 2. Search Contact, 3. Display All Contacts, 4. Exit\n");
+    	prompt("Enter option: ");
         scanf("%d",&option);
 
         switch(option)
@@ -333,104 +401,40 @@ int main()
         case 3: t_display_all_contacts(&trie); break;
         
         default: option = 0;
-        
         }
-        
+
+   		prompt("\n");
+   	     
     }while(option);
 
-//TODO t_write_to_file(&trie); @AnirudhShastri
     t_destructor(&trie);
     return 0;
 }
 
 /* Some inputs for test purposes
 
-1 Adam 901
-1 Angelo 902
-1 Ada 903
-1 Addison 904
-1 Bob 905
-1 Bojack 906
-1 Carmela 907
-1 Chad 90898
-
-1 m 909
-1 mi 910
-1 mif 908
-1 mil 909
-1 mig 910
-1 mifg 984
-1 milhdhi 984
-1 milhd 558789
-
-*/
-
-
-
-
-
-
-
-/* UI expectation
-Menu...
-
-<types in something which takes him to "Find Contact">
-
-Suggestion:
-Input: 
-
-<types in A>
-
-Suggestion:
-Input: A
-
-<types in r>
-
-Suggestion: Arun Kumar
-Input: Ar
-
-<types in v>
-
-Suggestion: Arvind
-Input: Arv
-
-<types in t>
-
-None found
-Input: Arvt
-
-<presses backspace>
-
-Suggestion: Arvind
-Input: Arv
-
-<presses backspace>
-
-Suggestion: Arun Kumar
-Input: Ar
-
-<types in u>
-
-Suggestion: Arun Kumar
-Input: Aru
-
-<presses Enter>
-
-Contact: Arun Kumar 9876543210
-1. Call 2. Delete 3. Back
-
-<types in 3>
-
-Suggestion: 
-Input: 
-
-<types in G>
-
-Suggestion:
-Input: G
-
-<presses Esc - wants to go back>
-
-Menu...
-
+1
+Adam 
+901
+1
+Angelo 
+902
+1
+Ada 
+903
+1
+Addison 
+904
+1
+Bob 
+905
+1
+Bojack 
+906
+1
+Carmela 
+907
+1
+Chad 
+90898
 */
