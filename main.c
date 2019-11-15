@@ -207,6 +207,7 @@ void n_search_contact_by_prefix(NodePointer root){
 	
 	fgetc(stdin); //removes unwanted linefeed
 	search_string[i] = getchar(); 
+	search_string[i] = tolower(search_string[i]);
 
 	if (search_string[i] == '/' || search_string[i] == '*') return; // Name cannot contain these characters
 	
@@ -255,7 +256,8 @@ void n_search_contact_by_prefix(NodePointer root){
 		
 		fgetc(stdin); //removes unwaned linefeed
 		search_string[i] = getchar(); 
-
+		search_string[i] = tolower(search_string[i]);
+		
 		if (search_string[i] == '/') // Accepted suggestion
 		{
 			search_string[i] = '\0';
