@@ -147,6 +147,18 @@ bool is_name_valid(char* input){
     //if (input[i - 1] == '\n') input[i - 1] = '\0';
 }
 
+bool is_phone_valid(char* input){
+
+	int i;
+	for (i = 0; input[i]; ++i){
+
+		if (isdigit(input[i]) == false)
+			return false;
+	}
+	if (i < 2) return false; // Taking phone no. to have a minimum of 2 digits
+	return true;
+}
+
 // Displays all contacts in ascending order
 void n_display_all_contacts(NodePointer parent, char* buffer, int level){
 // buffer stores all the characters before the current character
@@ -357,7 +369,12 @@ void t_add_contact(Trie* trie){
 	char* new_phone = (char*) calloc(MAX_PHONE_LEN, sizeof *new_phone);
 	prompt("Enter phone: ");
 	scanf("%s", new_phone);
-	//TODO check validity of phone no 
+	
+	if (is_phone_valid(new_phone) == false)
+	{
+		printf("Contact number does not meet validity criteria.\n");
+		return;
+	}
 
 	n_add_contact(trie->root, new_contact_name, new_phone);
 }
@@ -369,8 +386,12 @@ void t_search_contact_by_prefix(Trie* trie){
 
 void t_display_all_contacts(Trie* trie){
 
-	char buffer[MAX_NAME_LEN];
-	n_display_all_contacts(trie->root, buffer, 0);
+	if (trie->root->child){
+		char buffer[MAX_NAME_LEN];
+		n_display_all_contacts(trie->root, buffer, 0);
+	}
+	else
+		printf("No contacts yet.\n");
 }
 
 // Called at the end of main
